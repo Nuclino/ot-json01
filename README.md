@@ -1,3 +1,10 @@
+Changes to the original json0 type:
+- Add support for an optional unique flag `u` to list operations
+  - `u` can be a boolean that is set to `true` to ensure the inserted value is unique
+  - `u` can be a string that is set to an object key that should be unique (e.g. "id" if the list items have an "id" property)
+- Throw on out of bounds list operations
+- Use `json01` as the type name and an adjusted type uri
+
 # JSON0 OT Type
 
 The JSON OT type can be used to edit arbitrary JSON documents.
@@ -96,7 +103,7 @@ Lists and objects have the same set of operations (*Insert*, *Delete*,
 *Replace*, *Move*) but their semantics are very different. List operations
 shuffle adjacent list items left or right to make space (or to remove space).
 Object operations do not. You should pick the data structure which will give
-you the behaviour you want when you design your data model. 
+you the behaviour you want when you design your data model.
 
 To make it clear what the semantics of operations will be, list operations and
 object operations are named differently. (`li`, `ld`, `lm` for lists and `oi`,
@@ -201,9 +208,9 @@ There is (unfortunately) no equivalent for list move with objects.
 ### Subtype operations
 
 Usage:
-  
+
     {p:PATH, t:SUBTYPE, o:OPERATION}
-    
+
 `PATH` is the path to the object that will be modified by the subtype.
 `SUBTYPE` is the name of the subtype, e.g. `"text0"`.
 `OPERATION` is the subtype operation itself.
@@ -242,7 +249,7 @@ the subtype operation.
 Usage:
 
     {p:PATH, t:'text0', o:[{p:OFFSET, i:TEXT}]}
-    
+
 Insert `TEXT` to the string specified by `PATH` at the position specified by `OFFSET`.
 
 ##### Delete from a string
@@ -250,7 +257,7 @@ Insert `TEXT` to the string specified by `PATH` at the position specified by `OF
 Usage:
 
     {p:PATH, t:'text0', o:[{p:OFFSET, d:TEXT}]}
-    
+
 Delete `TEXT` in the string specified by `PATH` at the position specified by `OFFSET`.
 
 ---

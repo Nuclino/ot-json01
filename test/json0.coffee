@@ -126,17 +126,48 @@ genTests = (type) ->
         assert.deepEqual ['a', 'b', 'c'], type.apply ['a', 'c'], [{p:[1], li:'b'}]
         assert.deepEqual ['a', 'b', 'c'], type.apply ['a', 'b'], [{p:[2], li:'c'}]
 
+      it 'throws when inserting out of bounds', ->
+        assert.throws () -> type.apply ['b', 'c'], [{p:[-1], li:'a'}]
+        assert.throws () -> type.apply ['b', 'c'], [{p:[3], li:'a'}]
+
+      it 'inserts with unique flag', ->
+        assert.deepEqual ['a', 'b', 'c'], type.apply ['b', 'c'], [{p:[0], li:'a', u: true}]
+        assert.deepEqual [{id: 'a', val: 'hello'}, {id: 'b', val: 'world'}, {id: 'c', val: 't'}], type.apply [{id: 'a', val: 'hello'}, {id: 'b', val: 'world'}], [{p:[2], li:{id: 'c', val: 't'}, u: 'id'}]
+
+      it 'throws when inserting out of bounds with unique flag', ->
+        assert.throws () -> type.apply ['b', 'c'], [{p:[-1], li:'a', u: true}]
+        assert.throws () -> type.apply [{id: 'a', val: 1}, {id: 'b', val: 1}], [{p:[3], li:'a', u: 'id'}]
+
+      it 'throws when inserting an already existing value with unique flag', ->
+        assert.throws () -> type.apply ['a', 'b', 'c'], [{p:[0], li:'a', u: true}]
+        assert.throws () -> type.apply ['a', 'b', 'c'], [{p:[1], li:'a', u: true}]
+        assert.throws () -> type.apply [{id: 'a', val: 'hello'}, {id: 'b', val: 'world'}], [{p:[0], li:{id: 'a', val: 't'}, u: 'id'}]
+        assert.throws () -> type.apply [{id: 'a', val: 'hello'}, {id: 'b', val: 'world'}], [{p:[1], li:{id: 'a', val: 't'}, u: 'id'}]
+
       it 'deletes', ->
         assert.deepEqual ['b', 'c'], type.apply ['a', 'b', 'c'], [{p:[0], ld:'a'}]
         assert.deepEqual ['a', 'c'], type.apply ['a', 'b', 'c'], [{p:[1], ld:'b'}]
         assert.deepEqual ['a', 'b'], type.apply ['a', 'b', 'c'], [{p:[2], ld:'c'}]
 
+      it 'throws when deleting out of bounds', ->
+        assert.throws () -> type.apply ['b', 'c'], [{p:[-1], ld:'b'}]
+
       it 'replaces', ->
         assert.deepEqual ['a', 'y', 'b'], type.apply ['a', 'x', 'b'], [{p:[1], ld:'x', li:'y'}]
+
+      it 'throws when replacing out of bounds', ->
+        assert.throws () -> type.apply ['a', 'x', 'b'], [{p:[-1], ld:'x', li: 'y'}]
+        assert.throws () -> type.apply ['a', 'x', 'b'], [{p:[3], ld:'x', li: 'y'}]
 
       it 'moves', ->
         assert.deepEqual ['a', 'b', 'c'], type.apply ['b', 'a', 'c'], [{p:[1], lm:0}]
         assert.deepEqual ['a', 'b', 'c'], type.apply ['b', 'a', 'c'], [{p:[0], lm:1}]
+
+      it 'throws when moving out of bounds', ->
+        assert.throws () -> type.apply ['b', 'a', 'c'], [{p:[0], lm: -1}]
+        assert.throws () -> type.apply ['b', 'a', 'c'], [{p:[0], lm: 3}]
+        assert.throws () -> type.apply ['b', 'a', 'c'], [{p:[-1], lm: 0}]
+        assert.throws () -> type.apply ['b', 'a', 'c'], [{p:[3], lm: 0}]
 
       it 'throws when keying a list replacement with a string', ->
         assert.throws -> type.apply ['a', 'b', 'c'], [{p: ['0'], li: 'x', ld: 'a'}]
@@ -207,11 +238,31 @@ genTests = (type) ->
         assert.deepEqual [], type.transform [{p:[1], ld:'x'}], [{p:[1], ld:'x'}], 'left'
         assert.deepEqual [], type.transform [{p:[1], ld:'x'}], [{p:[1], ld:'x'}], 'right'
 
+      it 'converts an attempt to re-insert a unique list element into a no-op', ->
+        assert.deepEqual [], type.transform [{p:[0], li:'a', u: true}], [{p:[0], li:'a', u: true}], 'left'
+        assert.deepEqual [], type.transform [{p:[0], li:'a', u: true}], [{p:[0], li:'a', u: true}], 'right'
+
+      it 'moves the target index if two unique inserts are simultaneous', ->
+        assert.deepEqual [{p:[1], lm:0}], type.transform [{p:[0], li:'a', u: true}], [{p:[1], li:'a'}], 'left'
+        assert.deepEqual [], type.transform [{p:[1], li:'a', u: true}], [{p:[0], li:'a'}], 'right'
+
+      it 'replaces the inserted data if two unique keyed inserts are simultaneous', ->
+        assert.deepEqual [{p:[0], li:{id: 'a', b: 'x'}, ld:{id: 'a', b: 'z'}}], type.transform [{p:[0], li:{id: 'a', b: 'x'}, u: 'id'}], [{p:[0], li:{id: 'a', b: 'z'}}], 'left'
+        assert.deepEqual [], type.transform [{p:[0], li:{id: 'a', b: 'z'}, u: 'id'}], [{p:[0], li:{id: 'a', b: 'x'}}], 'right'
+
+      it 'replaces the inserted data and moves the target index if two unique keyed inserts are simultaneous', ->
+        assert.deepEqual [{p:[1], li:{id: 'a', b: 'x'}, ld:{id: 'a', b: 'z'}}, {p:[1], lm:0}], type.transform [{p:[0], li:{id: 'a', b: 'x'}, u: 'id'}], [{p:[1], li:{id: 'a', b: 'z'}}], 'left'
+        assert.deepEqual [], type.transform [{p:[1], li:{id: 'a', b: 'z'}, u: 'id'}], [{p:[0], li:{id: 'a', b: 'x'}}], 'right'
 
     describe '#compose()', ->
       it 'composes insert then delete into a no-op', ->
         assert.deepEqual [], type.compose [{p:[1], li:'abc'}], [{p:[1], ld:'abc'}]
         assert.deepEqual [{p:[1],ld:null,li:'x'}], type.transform [{p:[0],ld:null,li:"x"}], [{p:[0],li:"The"}], 'right'
+
+      it 'composes insert then unique insert into a single insert op', ->
+        assert.deepEqual [{p:[1], li:'a', u:true}], type.compose [{p:[1], li:'a'}], [{p:[1], li:'a', u:true}]
+        assert.deepEqual [{p:[0], li:'a', u:true}], type.compose [{p:[1], li:'a'}], [{p:[0], li:'a', u:true}]
+        assert.deepEqual [{p:[1], li:{id:'a', b:'z'}, u:'id'}], type.compose [{p:[1], li:{id:'a', b:'x'}}], [{p:[1], li:{id:'a', b:'z'}, u:'id'}]
 
       it 'doesn\'t change the original object', ->
         a = [{p:[0],ld:'abc',li:null}]

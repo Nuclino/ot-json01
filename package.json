@@ -1,5 +1,5 @@
 {
-  "name": "ot-json0",
+  "name": "ot-json01",
   "version": "1.1.0",
   "description": "JSON OT type",
   "main": "lib/index.js",
@@ -18,20 +18,5 @@
   "scripts": {
     "test": "mocha --require 'coffee-script/register' 'test/**'"
   },
-  "repository": {
-    "type": "git",
-    "url": "git://github.com/ottypes/json0"
-  },
-  "keywords": [
-    "ot",
-    "json",
-    "sharejs",
-    "operational-transformation"
-  ],
-  "author": "Joseph Gentle <me@josephg.com>",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/ottypes/json0/issues"
-  },
-  "homepage": "https://github.com/ottypes/json0"
+  "license": "ISC"
 }
